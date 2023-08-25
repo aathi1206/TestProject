@@ -35,6 +35,10 @@ public class LocationModule extends ReactContextBaseJavaModule {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(reactContext);
     }
 
+    private void resetLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback);
+    }
+
     @Override
     public String getName() {
         return "LocationModule";
@@ -46,6 +50,18 @@ public class LocationModule extends ReactContextBaseJavaModule {
     }
 
   
+  @ReactMethod
+    public void fetchLocation(){
+        resetLocationUpdates(); // Remove any ongoing location requests
+        // Permission granted and location enabled, start location updates
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
+        showToast("Check permission");
+
+    }
+
     private void checkLocationPermission() {
         if (ActivityCompat.checkSelfPermission(reactContext, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -67,13 +83,6 @@ public class LocationModule extends ReactContextBaseJavaModule {
             showPermissionAlert("Location permission is required to use this feature. Please enable location services in the app settings.");
             return;
         }
-
-        // Permission granted and location enabled, start location updates
-        LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
-        showToast("Check permission");
     }
 
     private boolean isLocationEnabled() {
@@ -138,9 +147,9 @@ private void sendLocationToReact(double latitude, double longitude, float accura
     locationMap.putDouble("longitude", longitude);
     locationMap.putDouble("accuracy", accuracy);
 
-    reactContext
-    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-    .emit("onLocationUpdate", locationMap);
+    getReactApplicationContext()
+        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+        .emit("onLocationUpdate", locationMap);
     // showToast(accuracy);
 }
 }
